@@ -67,5 +67,10 @@ Olivia Grimes
 2. Uber for tools - Spear
 3. Large-Scale Document Analysis, Mining, and Visualization to Advance the Fight Against Gender-Based Violence - Lopresti
 
+Walker Finlay
+1. Driverless Car - Montella
+2. Uber for tools - Spear
+3. Learning AI with Unity - Munoz
+
 
 Estimated time allocated this week: <1 Hrs
