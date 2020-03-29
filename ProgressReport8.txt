@@ -1,0 +1,44 @@
+# Progress Report 8
+
+## Summary of Work Completed
+
+This week, the group worked on learning more about Ackermann steering, as well as learning more
+about nodes in ROS and considered how best to package together the nodes. Overall, we started setting
+up our project with the new remote setup and continued to toggle with some issues related to ROS.
+
+### Goals completed this week
+
+-- becoming smart on Ackermann steering and nodes in ROS
+-- starting to form network of nodes
+
+### Goals not met this week
+
+-- We were unable to fully complete all of our goals from last week, but we did make progress on 
+each of them
+-- we found that we each reached a point where we needed to talk through things with Prof Montella,
+which we did on Thursday
+
+### Challenges faced this week
+
+Faced some challenges of all being remote and it being hard to have quick responses sometimes
+necessary to move on with our work.
+
+### Goals for next week
+
+-- make more progress on the Ackermann steering model and get something working in code 
+-- continue working with the nodes and create the network of nodes
+
+## Individual Member Contributions
+
+For each group member, list the individual contributions, and a link to proof in the form of a commit to your group repository. At the end, provide an estimate for how many hours these contributions took to complete.
+
+### Olivia:
+- began researching and becoming smart on ackermann steering in prep of creating motion model
+### Walker:
+- worked with nodes and brought up different ways we could go about packaging them
+### Wes:
+- worked on getting ROS to work and looking into nodes
+### Kingsley:
+- worked on getting ROS to work and looking into nodes
+
+Estimated time allocated this week: 6 Hrs
