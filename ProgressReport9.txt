@@ -1,0 +1,36 @@
+# Progress Report 9
+
+## Summary of Work Completed
+
+This week we continued to work on setting everything up remotely. Progress was made with the motion model, and creation of nodes.
+
+### Goals completed this week
+
+- continued to learn about Ackermann Steering and started getting something together in code 
+- continued to deal with challenges of being remote and having technological 
+difficulties related to getting network of nodes started, but began
+to create the nodes and got past many of the technological challenges faced
+
+### Goals not met this week
+
+- didn't fully complete the network of nodes, but made a lot of progress
+and dealt with technical difficulties
+
+### Challenges faced this week
+
+- dealt with some technical difficulties related to everyone being able
+to create nodes, but overcame many of these
+
+### Goals for next week
+
+- finish motion model
+- be nearly if not completely finished with network of nodes
+
+## Individual Member Contributions
+
+Olivia - Worked on motion model, almost done
+Kingsley - worked with Wes to deal with technical difficulties, worked on nodes
+Wes - worked with Kingsley to deal with technical difficulties, worked on nodes
+Walker - successfully got a node working 
+
+Estimated time allocated this week: 6 Hrs
