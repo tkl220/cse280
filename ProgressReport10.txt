@@ -1,0 +1,36 @@
+# Progress Report 10
+
+## Summary of Work Completed
+
+Made more progress with motion model. Need to adjust angles to be how we want,
+and make it work based on new planes. Made progress on network of nodes.
+Learned more about Player and Stage and started trying to configure that.
+
+### Goals completed this week
+
+- Motion model progress
+- Player and stage on a roll
+- network of ndoes coming together
+
+### Goals not met this week
+
+- didn't complete motion model, but made good progress
+- didn't finish network of nodes, but also made good progress
+
+### Challenges faced this week
+
+- same as always -- facing technical difficulties of being virtual and remote
+
+### Goals for next week
+
+- make more progress on the three main components of our project: motion model,
+player and stage, network of nodes
+
+## Individual Member Contributions
+
+Olivia — worked on motion model
+Walker — made progress on network of nodes, and sending/receiving messages
+Kingsley — worked with Wes on Player and Stage
+Wes — worked with Kingsley on Player and Stage
+
+Estimated time allocated this week: 5 Hrs

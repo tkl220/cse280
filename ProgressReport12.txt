@@ -1,0 +1,34 @@
+# Progress Report 12
+
+## Summary of Work Completed
+
+- completed motion model
+- understanding of StageROS and starting to make Progress
+- network of nodes coming together -- fixed some issues with ROS
+
+### Goals completed this week
+
+- motion model complete, got StageROS to publish methods, dealt with issues
+relating to ROS and the network of nodes
+
+### Goals not met this week
+
+- n/a -- made sufficient progress
+
+### Challenges faced this week
+
+- dealing with ROS and StageROS and technical difficulties
+
+### Goals for next week
+
+- n/a -- next week is next semester
+- although we all plan to work on the project this summer!
+
+## Individual Member Contributions
+
+Olivia — finished motion model
+Walker — network of nodes in a good spot
+Kingsley — StageROS work in a good place, publishing messages
+Wes — StageROS work in a good place, publishing messages
+
+Estimated time allocated this week: 4 Hrs

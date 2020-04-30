@@ -1,0 +1,35 @@
+# Progress Report 11
+
+## Summary of Work Completed
+
+- motion model nearly complete -- just have to do some testing
+- switched from Player/Stage to StageROS after finding it suits our surposes
+better, getting started with that
+- network of nodes coming together
+
+### Goals completed this week
+
+- made more progress with each part of our project
+
+### Goals not met this week
+
+- n/a -- leaving goals up to making progress since we are facing
+so many technical difficulties
+
+### Challenges faced this week
+
+- some challenges with ROS being funky, and adapting to StageROS
+
+### Goals for next week
+
+- continue to make progress on the components of our project
+- specifically, finish motion model, get sensors to publish messages
+
+## Individual Member Contributions
+
+Olivia — almost complete with motion model
+Walker — made progress with network of nodes
+Kingsley — learning about StageROS and starting to work w it
+Wes — learning about StageROS and starting to work w it
+
+Estimated time allocated this week: 5 Hrs
