@@ -230,7 +230,7 @@ void train(int init_state){
     cout << "[INFO] start training..." << endl;
     for (int i = 0; i < EPISODES; ++i) {
         //cout << "[INFO] Episode: " << i << endl;
-        episode_iterator(rand()%MAP_SIZE);
+        episode_iterator(0);
         //cout << "-- updated Q matrix: " << endl;
         //print_q();
     }
