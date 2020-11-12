@@ -154,7 +154,7 @@ bool check_action(int state, int action) {
 /*
  * get max value in Q matrix from given state
  */
-int max_q(int state){
+int max_q_action(int state){
     double max = -999999;
     int action = -1;
     for(int i = 0; i < NUM_ACTIONS; i++){
@@ -203,13 +203,13 @@ int episode_iterator(int init_state){
             while(!check_action(init_state, action)) action = rand() % NUM_ACTIONS;
         } else {
             //cout << "-- step " << step << ": MAX_Q" << endl;
-            action = max_q(init_state);
+            action = max_q_action(init_state);
         }
         //cout << "-- step " << step << ": action: " << action << endl;
 
         next_state = update_state(init_state, action);
         old_q = Q[init_state][action];
-        Q[init_state][action] = old_q + ALPHA * (R[init_state][action] + GAMMA *  Q[next_state][max_q(next_state)] - old_q);
+        Q[init_state][action] = old_q + ALPHA * (R[init_state][action] + GAMMA *  Q[next_state][max_q_action(next_state)] - old_q);
 
         //cout << "-- step " << step << ": next state: " << next_state << endl;
 
@@ -264,7 +264,7 @@ void run_Qlearing() {
         }
         int i = 0;
         while(i++ < TRANSITIONS_TO_PRINT) { //make TRANSITIONS_TO_PRINT number of actions or until goal state found
-            int action = max_q(state);
+            int action = max_q_action(state);
             cout << state << "-";
             state = update_state(state, action);
             cout << action << "->" << state << endl;
