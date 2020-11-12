@@ -23,8 +23,8 @@ using namespace std;
 
 // Q-learning relevant definitions
 #define ALPHA .1 //weight of newly learned behavior
-#define GAMMA .9 //weight of next action
-#define EPSILON .1 //chance next action is random
+#define GAMMA .7 //weight of next action
+#define EPSILON .3 //chance next action is random
 #define DESTINATION 8 //state which has positive reward (cheese)
 #define EPISODES 3000 //number of times to find goal
 
@@ -39,8 +39,8 @@ int map7[7][7] = {{-1, -1, -1, -1, -1, -1, -1},
                  {-1,100, -1, -1, -1, -1, -1}};
 
 int map[3][3] = {{   0,   0,   0},
-                 {-100,   0,-100},
-                 {-100,   0,  50}};
+                 {-100,   0, -100},
+                 {-100,   0,  150}};
 
 double Q[MAP_SIZE][NUM_ACTIONS];
 double R[MAP_SIZE][NUM_ACTIONS];
@@ -150,6 +150,7 @@ bool check_action(int state, int action) {
     return true;
 }
 
+// TODO:make this random 
 /*
  * get max value in Q matrix from given state
  */
@@ -191,9 +192,10 @@ int episode_iterator(int init_state){
         //cout << "-- step " << step << ": initial state: " << init_state << endl;
 
         // get next action
-        std::uniform_real_distribution<double> urd(0,1);
-        std::default_random_engine re;
-        double r = urd(re);
+//        std::uniform_real_distribution<double> urd(0,1);
+//        std::default_random_engine re;
+//        double r = urd(re);
+        double r = (float) rand()/RAND_MAX ;
         action = rand() % NUM_ACTIONS;
         //random chance to select random action
         if (r < EPSILON) {
@@ -207,7 +209,7 @@ int episode_iterator(int init_state){
 
         next_state = update_state(init_state, action);
         old_q = Q[init_state][action];
-        Q[init_state][action] = old_q + ALPHA * (R[init_state][action] + GAMMA * max_q(next_state) - old_q);
+        Q[init_state][action] = old_q + ALPHA * (R[init_state][action] + GAMMA *  Q[next_state][max_q(next_state)] - old_q);
 
         //cout << "-- step " << step << ": next state: " << next_state << endl;
 
@@ -222,15 +224,15 @@ int episode_iterator(int init_state){
  * Runs EPISODES number of iterations of finding the goal state to create a converged Q-matrix.
  */
 void train(int init_state){
-    int initial_state = init_state;
+    int initial_state = init_state; // FIXME: what's this?
 
     // start random
     srand((unsigned)time(NULL));
     //srand(1);
     cout << "[INFO] start training..." << endl;
     for (int i = 0; i < EPISODES; ++i) {
-        //cout << "[INFO] Episode: " << i << endl;
-        episode_iterator(0);
+//        cout << "[INFO] Episode: " << i << endl;
+        episode_iterator(init_state);
         //cout << "-- updated Q matrix: " << endl;
         //print_q();
     }
@@ -288,9 +290,9 @@ void run_sensors() {
 }
 
 int main() {
-    int run;
-    cout << "[1] sensor simulation" << endl << "[2] Q-learning" << endl <<"choose from above to run: " << endl;
-    cin >> run;
+    int run = 2;
+//    cout << "[1] sensor simulation" << endl << "[2] Q-learning" << endl <<"choose from above to run: " << endl;
+//    cin >> run;
     if(run == 1) run_sensors();
     else if(run == 2) run_Qlearing();
     return 0;
