@@ -14,7 +14,7 @@ TrajectoryRollout.cpp
         once you exit, the points will be passed to the trajectory.txt file, and also printed to the terminal
 
 ** ScoreTesting.cpp
-    -- more recent file I have been working on - this file adds the concept of a goal point which we are always chasing and is always moving further away, so this file is the same as TrajectoryROllout.cpp, but the scoring method is different, and working better. LOOK AT THIS FILE!!!!! The other files I am explaining may bring clarity to how it's working as a whole, but this file is the most important to look at.
+    -- LOOK AT THIS FILE!!!!!- more recent file I have been working on - this file adds the concept of a goal point which we are always chasing and is always moving further away, so this file is the same as TrajectoryROllout.cpp, but the scoring method is different, and working better. The other files I am explaining may bring clarity to how it's working as a whole, but this file is the most important to look at.
 
 trajectory.txt
     -- the text file that is populated in csv format with the coordinates forming the trajectory of the car after you finish running ScoreTesting.cpp
