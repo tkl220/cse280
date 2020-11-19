@@ -4,6 +4,8 @@
 #include <random>
 #include "Segment.h"
 #include "sensors.h"
+#include <fstream>
+
 /*#include "/Applications/MATLAB_R2020b.app/extern/include/engine.h"
 #include "/Applications/MATLAB_R2020b.app/extern/include/configure.h"
 #include "MatlabEngine.hpp"
@@ -283,16 +285,21 @@ void run_sensors() {
     vector<Segment> sensor_segments = get_sensor_segments(track1(), agent, sensor_16(agent));
     cout << "agent coordinates: " << agent.first << ", " << agent.second << endl;
     cout << "All segments are from agent -> intersection, since agent it always the same it is not repeated,\nonly the intersection points are displayed" << endl;
+    ofstream out_file("senseg_new.csv");
     for(auto segment : sensor_segments) {
         //minimum formatting for ease of copy and pasting into
         cout << segment.p2.first << ", " << segment.p2.second << endl;
+        out_file << agent.first << "," << agent.second << "," << segment.p2.first << "," << segment.p2.second << endl;
+
     }
+    remove("senseg_old.csv");
+    rename("senseg_new.csv","senseg_old.csv");
 }
 
 int main() {
-    int run = 2;
-//    cout << "[1] sensor simulation" << endl << "[2] Q-learning" << endl <<"choose from above to run: " << endl;
-//    cin >> run;
+    int run = 1;
+    cout << "[1] sensor simulation" << endl << "[2] Q-learning" << endl <<"choose from above to run: " << endl;
+    cin >> run;
     if(run == 1) run_sensors();
     else if(run == 2) run_Qlearing();
     return 0;
