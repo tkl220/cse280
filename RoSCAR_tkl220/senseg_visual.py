@@ -18,6 +18,11 @@ def print_hi(name):
 if __name__ == '__main__':
     print_hi('PyCharm')
     lines = []
+    with open('track.csv', 'r') as track_csv:
+        csv_reader = csv.reader(track_csv, delimiter=',')
+        for row in csv_reader:
+            segment = [(row[0], row[1]), (row[2], row[3])]
+            lines.append(segment)
     with open('senseg_old.csv', 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:

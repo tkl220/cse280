@@ -282,9 +282,14 @@ void run_Qlearing() {
 void run_sensors() {
     pair<double, double> agent = make_pair(-3, 4);
     //gets segments representing sensors, functions and such found in sensors.cpp and Segment.cpp
-    vector<Segment> sensor_segments = get_sensor_segments(track1(), agent, sensor_16(agent));
+    vector<Segment> track = track1();
+    vector<Segment> sensor_segments = get_sensor_segments(track, agent, sensor_16(agent));
     cout << "agent coordinates: " << agent.first << ", " << agent.second << endl;
     cout << "All segments are from agent -> intersection, since agent it always the same it is not repeated,\nonly the intersection points are displayed" << endl;
+    ofstream track_file("track.csv");
+    for(auto segment : track) {
+        track_file << agent.first << "," << agent.second << "," << segment.p2.first << "," << segment.p2.second << endl;
+    }
     ofstream out_file("senseg_new.csv");
     for(auto segment : sensor_segments) {
         //minimum formatting for ease of copy and pasting into
