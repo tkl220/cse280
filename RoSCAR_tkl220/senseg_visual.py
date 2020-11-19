@@ -2,7 +2,7 @@
 
 # Press ⌃R to execute it or replace it with your code.
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
-
+import matplotlib
 import numpy as np
 import pylab as pl
 from matplotlib import collections as mc
@@ -29,5 +29,5 @@ if __name__ == '__main__':
         ax.autoscale()
         ax.margins(0.1)
         fig.show()
-
+        matplotlib.pyplot.show()
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
