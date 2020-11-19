@@ -279,26 +279,37 @@ void run_Qlearing() {
     }
 }
 
+
+
+void update_track_csv(vector<Segment> track) {
+    ofstream out_file("track.csv");
+    for(auto segment : track) {
+        out_file << segment.p1.first << "," << segment.p1.second << "," << segment.p2.first << "," << segment.p2.second << endl;
+    }
+}
+
+void update_senseg_csv(pair<double, double> agent, vector<Segment> sensor_segments) {
+    ofstream out_file("sensor_segments.csv");
+    for(auto segment : sensor_segments) {
+        out_file << agent.first << "," << agent.second << "," << segment.p2.first << "," << segment.p2.second << endl;
+    }
+
+}
+
 void run_sensors() {
     pair<double, double> agent = make_pair(-3, 4);
     //gets segments representing sensors, functions and such found in sensors.cpp and Segment.cpp
     vector<Segment> track = track1();
-    vector<Segment> sensor_segments = get_sensor_segments(track, agent, sensor_16(agent));
+    vector<pair<double, pair<double, double>>> sensors = sensor_16(agent);
+    vector<Segment> sensor_segments = get_sensor_segments(track, agent, sensors);
     cout << "agent coordinates: " << agent.first << ", " << agent.second << endl;
     cout << "All segments are from agent -> intersection, since agent it always the same it is not repeated,\nonly the intersection points are displayed" << endl;
-    ofstream track_file("track.csv");
-    for(auto segment : track) {
-        track_file << agent.first << "," << agent.second << "," << segment.p2.first << "," << segment.p2.second << endl;
-    }
-    ofstream out_file("senseg_new.csv");
     for(auto segment : sensor_segments) {
         //minimum formatting for ease of copy and pasting into
         cout << segment.p2.first << ", " << segment.p2.second << endl;
-        out_file << agent.first << "," << agent.second << "," << segment.p2.first << "," << segment.p2.second << endl;
-
     }
-    remove("senseg_old.csv");
-    rename("senseg_new.csv","senseg_old.csv");
+    update_track_csv(track);
+    update_senseg_csv(agent, sensor_segments);
 }
 
 int main() {
