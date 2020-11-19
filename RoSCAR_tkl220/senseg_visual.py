@@ -23,7 +23,7 @@ if __name__ == '__main__':
         for row in csv_reader:
             segment = [(row[0], row[1]), (row[2], row[3])]
             lines.append(segment)
-    with open('senseg_old.csv', 'r') as csv_file:
+    with open('sensor_segments.csv', 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:
             segment = [(row[0], row[1]), (row[2], row[3])]
