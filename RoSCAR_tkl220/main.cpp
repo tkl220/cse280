@@ -5,23 +5,17 @@
 #include "Segment.h"
 #include "sensors.h"
 #include <fstream>
-
-/*#include "/Applications/MATLAB_R2020b.app/extern/include/engine.h"
-#include "/Applications/MATLAB_R2020b.app/extern/include/configure.h"
-#include "MatlabEngine.hpp"
-#include "MatlabDataArray.hpp"
-#include "mex.hpp"*/
-
-//void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]);
+#include <algorithm>
 
 using namespace std;
 // Credit to Jin Fagang from https://github.com/jinfagang/Q-Learning
 // for basis of this code.
 
 // map relevant definitions
-#define NUM_ACTIONS 4 //down, up, left, right: {-1, 0}, {1, 0}, {0, -1}, {0, 1}
-#define N 3 //size of map NxN
-#define MAP_SIZE 9 //total size of map, MAP_SIZE = NxN
+#define NUM_ACTIONS 8 // N {0,1} E {1,0} S {0,-1} W {-1,0} 
+                      // NE {1,1} SE {1,-1} SW {-1,-1} NW {-1,1}
+#define N 50 //size of map NxN
+#define MAP_SIZE 2500 //total size of map, MAP_SIZE = NxN
 
 // Q-learning relevant definitions
 #define ALPHA .1 //weight of newly learned behavior
@@ -32,135 +26,49 @@ using namespace std;
 
 #define TRANSITIONS_TO_PRINT 10 //number of actions from state to print in traversing map using converged Q-matrix
 
-int map7[7][7] = {{-1, -1, -1, -1, -1, -1, -1},
-                 {-1,  0,-25,  0,-25,  0, -1},
-                 {-100,  0,  0,  0,  0,  0, -1},
-                 {-1,-200,-50,-50,  0,-25, -1},
-                 {-1,-90,-90,  0,  0,  0, -1},
-                 {-1,  0,  0,  0,-25,  0, -1},
-                 {-1,100, -1, -1, -1, -1, -1}};
+int gridworld[N][N] = {0};
+double Q[MAP_SIZE][NUM_ACTIONS] = {0};
+double R[MAP_SIZE][NUM_ACTIONS] = {0};
+// 20,000 doubles = 160kB?
+vector<Segment> track;
+void run_sensors(int init_state);
+std::pair<int, int> actions[8] = { // TODO: Maybe use this instead?
+    make_pair(0,1),     // N
+    make_pair(1,0),     // E
+    make_pair(0,-1),    // S
+    make_pair(-1,0),    // W
+    make_pair(1,1),     // NE
+    make_pair(1,-1),    // SE
+    make_pair(-1,-1),   // SW
+    make_pair(-1,1)     // NW
+};
 
-int map[3][3] = {{   0,   0,   0},
-                 {-100,   0, -100},
-                 {-100,   0,  150}};
-
-double Q[MAP_SIZE][NUM_ACTIONS];
-double R[MAP_SIZE][NUM_ACTIONS];
-
-//initialize all values in Q to zero
-void buildQ() {
-    for(int i = 0; i < MAP_SIZE; i++) {
-        for(int j = 0; j < NUM_ACTIONS; j++) {
-            Q[i][j] = 0;
-        }
-    }
-}
-//Build reward table from map
-//-999999 used to signify invalid action from current state
-void buildR() {
-    for(int i = 0; i < MAP_SIZE; i++) {
-        if((i/N)-1 < 0 && (i%N)-1 < 0) { //if in top left corner
-            R[i][0] = map[(i/N)+1][i%N];
-            R[i][1] = -999999;
-            R[i][2] = -999999;
-            R[i][3] = map[i/N][(i%N)+1];
-        } else if((i/N)+1 > N-1 && (i%N)-1 < 0) { //if in bottom left corner
-            R[i][0] = -999999;;
-            R[i][1] = map[(i/N)-1][i%N];
-            R[i][2] = -999999;
-            R[i][3] = map[i/N][(i%N)+1];
-        } else if((i/N)-1 < 0 && (i%N)+1 > N-1) { //if in top right corner
-            R[i][0] = map[(i/N)+1][i%N];
-            R[i][1] = -999999;;
-            R[i][2] = map[i/N][(i%N)-1];
-            R[i][3] = -999999;
-        } else if((i/N)+1 > N-1 && (i%N)+1 > N-1) { //if in bottom right corner
-            R[i][0] = -999999;
-            R[i][1] = map[(i/N)-1][i%N];
-            R[i][2] = map[i/N][(i%N)-1];
-            R[i][3] = -999999;
-        } else if((i/N)-1 < 0) { //if on top edge
-            R[i][0] = map[(i/N)+1][i%N];
-            R[i][1] = -999999;
-            R[i][2] = map[i/N][(i%N)-1];
-            R[i][3] = map[i/N][(i%N)+1];
-        } else if ((i/N)+1 > N-1) { //if on bottom edge
-            R[i][0] = -999999;
-            R[i][1] = map[(i/N)-1][i%N];
-            R[i][2] = map[i/N][(i%N)-1];
-            R[i][3] = map[i/N][(i%N)+1];
-        } else if ((i%N)-1 < 0) { //if on left edge
-            R[i][0] = map[(i/N)+1][i%N];
-            R[i][1] = map[(i/N)-1][i%N];
-            R[i][2] = -999999;
-            R[i][3] = map[i/N][(i%N)+1];
-        } else if ((i%N)+1 > N-1) { //if on right edge
-            R[i][0] = map[(i/N)+1][i%N];
-            R[i][1] = map[(i/N)-1][i%N];
-            R[i][2] = map[i/N][(i%N)-1];
-            R[i][3] = -999999;
-        } else { //if not on any edge
-            R[i][0] = map[(i / N) + 1][i % N];
-            R[i][1] = map[(i / N) - 1][i % N];
-            R[i][2] = map[i / N][(i % N) - 1];
-            R[i][3] = map[i / N][(i % N) + 1];
-        }
-    }
-}
-
-/*
- * print Q-matrix
- */
-void print_q() {
-    for(int i = 0; i < MAP_SIZE; i++) {
-        cout << i <<": {";
-        for(int j = 0; j < NUM_ACTIONS - 1; ++j) {
-            cout << Q[i][j] << ", ";
-        }
-        cout << Q[i][NUM_ACTIONS-1];
-        cout << "}," << endl;
-    }
-}
-
-/*
- * print Reward-matrix
- */
-void print_r() {
-    for(int i = 0; i < MAP_SIZE; i++) {
-        cout << i <<": {";
-        for(int j = 0; j < NUM_ACTIONS - 1; ++j) {
-            cout << R[i][j] << ", ";
-        }
-        cout << R[i][NUM_ACTIONS-1];
-        cout << "}," << endl;
-    }
-}
+// TODO: set up checkpoints in R matrix
+// Make them floats for my laptop doesn't have much memory please
+// positive reward for going clockwise
+// negative reward for going counter-clockwise
+// y = int(y1 + dy*(x - x1) / dx) doesn't work for vertical lines! - just transpose it?
 
 /*
  * Check if action is valid from given state
  */
+// bool check_action(int state, std::pair<int,int> action) {
 bool check_action(int state, int action) {
-    if(action == 0 && (state/N + 1) > N-1) {
-        return false;
-    } else if(action == 1 && (state/N - 1) < 0) {
-        return false;
-    } else if(action == 2 && (state%N - 1) < 0) {
-        return false;
-    } else if(action == 3 && (state%N + 1) > N-1) {
-        return false;
-    }
+    // TODO: use gridworld to check if action is valid
+    // int x = state%N;
+    // int y = state/N;
+    // return !gridworld[x + action.first][y + action.second];
     return true;
 }
 
-// TODO:make this random 
 /*
  * get max value in Q matrix from given state
  */
 int max_q_action(int state){
     double max = -999999;
     int action = -1;
-    for(int i = 0; i < NUM_ACTIONS; i++){
-        //cout << "max, i, Q[state][i], check_action::: " << max << ", " << i << ", " << Q[state][i] << ", " << << ", " << endl;
+    int i = 0;
+    for (i = 0; i < NUM_ACTIONS; i++) {
         if (Q[state][i] >= max && check_action(state, i)) {
             max = Q[state][i];
             action = i;
@@ -170,14 +78,20 @@ int max_q_action(int state){
 }
 
 /*
-* get max value in Q matrix from given state
+* old state + action = new state
 */
+// int update_state(int state, std::pair<int,int> action) {
 int update_state(int state, int action) {
     int new_state = -1;
-    if(action == 0) new_state = state + N;
-    else if(action == 1) new_state = state - N;
-    else if(action == 2) new_state = state - 1;
-    else if(action == 3) new_state = state + 1;
+    if(action == 0) new_state = state + N;          // North
+    else if(action == 1) new_state = state + 1;     // East
+    else if(action == 2) new_state = state - N;     // South
+    else if(action == 3) new_state = state - 1;     // West
+    else if(action == 4) new_state = state + N + 1; // NE
+    else if(action == 5) new_state = state - N + 1; // SE
+    else if(action == 6) new_state = state - N - 1; // SW
+    else if(action == 7) new_state = state + N - 1; // NW
+    // return state + N % action.first + N / action.second
     return  new_state;
 }
 
@@ -191,29 +105,22 @@ int episode_iterator(int init_state){
 
     int step=0;
     while (init_state != DESTINATION){
-        //cout << "-- step " << step << ": initial state: " << init_state << endl;
+
+        run_sensors(init_state);
 
         // get next action
-//        std::uniform_real_distribution<double> urd(0,1);
-//        std::default_random_engine re;
-//        double r = urd(re);
         double r = (float) rand()/RAND_MAX ;
         action = rand() % NUM_ACTIONS;
         //random chance to select random action
         if (r < EPSILON) {
-            //cout << "-- step " << step << ": EPSILON" << endl;
             while(!check_action(init_state, action)) action = rand() % NUM_ACTIONS;
         } else {
-            //cout << "-- step " << step << ": MAX_Q" << endl;
             action = max_q_action(init_state);
         }
-        //cout << "-- step " << step << ": action: " << action << endl;
 
         next_state = update_state(init_state, action);
         old_q = Q[init_state][action];
-        Q[init_state][action] = old_q + ALPHA * (R[init_state][action] + GAMMA *  Q[next_state][max_q_action(next_state)] - old_q);
-
-        //cout << "-- step " << step << ": next state: " << next_state << endl;
+        Q[init_state][action] = old_q+ALPHA*(R[init_state][action]+GAMMA*Q[next_state][max_q_action(next_state)]-old_q);
 
         init_state = next_state;
         step++;
@@ -226,33 +133,17 @@ int episode_iterator(int init_state){
  * Runs EPISODES number of iterations of finding the goal state to create a converged Q-matrix.
  */
 void train(int init_state){
-    int initial_state = init_state; // FIXME: what's this?
-
     // start random
-    srand((unsigned)time(NULL));
-    //srand(1);
+    srand((unsigned)time(NULL)); // TODO: What does this do?
     cout << "[INFO] start training..." << endl;
     for (int i = 0; i < EPISODES; ++i) {
-//        cout << "[INFO] Episode: " << i << endl;
         episode_iterator(init_state);
-        //cout << "-- updated Q matrix: " << endl;
-        //print_q();
     }
     cout << "[INFO] end training..." << endl;
 }
 
-void run_Qlearing() {
-    buildQ();
-    buildR();
-
-    cout << "Q matrix:" << endl;
-    print_q();
-
-    train(0);
-    cout << "Q convergence matrix:" << endl;
-    print_q();
-    cout << "R matrix:" << endl;
-    print_r();
+void run_Qlearing(int init_state, vector<Segment> *track) {
+    train(init_state);
 
     int state = 0;
     while(state != DESTINATION) { //while not at goal state continue asking for new start state...
@@ -279,12 +170,22 @@ void run_Qlearing() {
     }
 }
 
-
+void write_out_gridworld(int (&grid)[N][N]) {
+    ofstream out_file("grid.csv");
+    for (size_t i = 0; i < N; i++) {
+        for (size_t j = 0; j < N; j++) {
+            out_file << grid[i][j] << ",";
+        }
+        out_file << endl;
+    }
+    return;
+}
 
 void update_track_csv(vector<Segment> track) {
     ofstream out_file("track.csv");
     for(auto segment : track) {
-        out_file << segment.p1.first << "," << segment.p1.second << "," << segment.p2.first << "," << segment.p2.second << endl;
+        out_file << segment.p1.first << "," << segment.p1.second << "," << segment.p2.first 
+            << "," << segment.p2.second << endl;
     }
 }
 
@@ -296,40 +197,44 @@ void update_senseg_csv(pair<double, double> agent, vector<Segment> sensor_segmen
 
 }
 
-void run_sensors() {
-    pair<double, double> agent = make_pair(-3, 4);
+void run_sensors(int init_state) {
+    // NB: This is the only place we should be dealing with decimals - keep casting to a minimum overall
+    pair<int, int> agent = make_pair(init_state/N, init_state%N);
+
     //gets segments representing sensors, functions and such found in sensors.cpp and Segment.cpp
-    vector<Segment> track = track1();
     vector<pair<double, pair<double, double>>> sensors = sensor_16(agent);
     vector<Segment> sensor_segments = get_sensor_segments(track, agent, sensors);
-    cout << "agent coordinates: " << agent.first << ", " << agent.second << endl;
-    cout << "All segments are from agent -> intersection, since agent it always the same it is not repeated,\nonly the intersection points are displayed" << endl;
     for(auto segment : sensor_segments) {
-        //minimum formatting for ease of copy and pasting into
-        cout << segment.p2.first << ", " << segment.p2.second << endl;
+        gridworld[(int)(segment.p2.first+0.5)][(int)(segment.p2.second+0.5)] = 1;
     }
     update_track_csv(track);
     update_senseg_csv(agent, sensor_segments);
 }
 
 int main() {
-    int run = 1;
-    cout << "[1] sensor simulation" << endl << "[2] Q-learning" << endl <<"choose from above to run: " << endl;
-    cin >> run;
-    if(run == 1) run_sensors();
-    else if(run == 2) run_Qlearing();
+    // INPUTS -------------------------
+    track = track1();
+    double old_n = 8;
+    double x = -3;
+    double y = 4;
+    // Shift & scale inputs -----------
+    // [(-4,-1), (4,7)] => [(0,0), (8,8)] => [(0,0), (N,N)]
+    transform(track.begin(), track.end(), track.begin(), 
+        [old_n](Segment &seg){return Segment(make_pair(seg.p1.first+old_n/2, seg.p1.second), 
+                                            make_pair(seg.p2.first+old_n/2, seg.p2.second));}
+    );
+    transform(track.begin(), track.end(), track.begin(), 
+        [old_n](Segment &seg){return Segment(make_pair(seg.p1.first*N/old_n, seg.p1.second*N/old_n),
+                                            make_pair(seg.p2.first*N/old_n, seg.p2.second*N/old_n));}
+    );
+    x += old_n/2.0;
+    x *= N/old_n;
+    y *= N/old_n;
+    /* ######## Just messin ######## */
+    run_sensors(N*(int)(x+0.5)+y);
+    write_out_gridworld(gridworld);
+    /* ############################# */
+    // Do the Q -----------------------
+    // run_Qlearing();
     return 0;
 }
-
-/*
-void plotlines(int x, int y) {
-    unique_ptr<matlab::engine::MATLABEngine> matlabPtr = matlab::engine::startMATLAB();
-    matlab::data::ArrayFactory factory;
-    vector<matlab::data::Array> args({factory.createScalar<int16_t>(30), factory.createScalar<int16_t>(56) });
-    matlab::data::TypedArray<int16_t> result = matlabPtr->feval(u"gcd", args);
-    int16_t v = result[0];
-    std::cout << "Result: " << v << std::endl;
-}
-*/
-
-

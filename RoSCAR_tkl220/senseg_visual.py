@@ -19,6 +19,7 @@ if __name__ == '__main__':
     print_hi('PyCharm')
     walls = []
     sensors = []
+    grid = []
     with open('track.csv', 'r') as track_csv:
         csv_reader = csv.reader(track_csv, delimiter=',')
         for row in csv_reader:
@@ -29,14 +30,21 @@ if __name__ == '__main__':
         for row in csv_reader:
             segment = [(row[0], row[1]), (row[2], row[3])]
             sensors.append(segment)
-        wc = mc.LineCollection(walls, linewidths=2)
-        sc = mc.LineCollection(sensors, linewidths=0.5, colors='#ff4545')
-        fig, ax = pl.subplots()
-        ax.add_collection(wc)
-        ax.add_collection(sc)
-        ax.autoscale()
-        ax.margins(0.1)
-        ax.grid(True)
-        fig.show()
-        matplotlib.pyplot.show()
+    with open('grid.csv', 'r') as grid_csv:
+        csv_reader = csv.reader(grid_csv, delimiter=',')
+        for row in csv_reader:
+            grid.append([int(x) for x in row[:-1]])
+    grid = np.array(grid)
+    wc = mc.LineCollection(walls, linewidths=2)
+    sc = mc.LineCollection(sensors, linewidths=0.5, colors='#ff4545')
+    fig, ax = pl.subplots()
+    ax.imshow(grid.T)
+    ax.add_collection(wc)
+    ax.add_collection(sc)
+    ax.autoscale()
+    ax.margins(0.1)
+    ax.grid(True)
+    fig.gca().invert_yaxis()
+    fig.show()
+    matplotlib.pyplot.show()
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
