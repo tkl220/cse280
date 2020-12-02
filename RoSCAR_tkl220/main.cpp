@@ -6,22 +6,19 @@
 #include "sensors.h"
 #include <fstream>
 
-/*#include "/Applications/MATLAB_R2020b.app/extern/include/engine.h"
-#include "/Applications/MATLAB_R2020b.app/extern/include/configure.h"
-#include "MatlabEngine.hpp"
-#include "MatlabDataArray.hpp"
-#include "mex.hpp"*/
-
-//void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]);
+void sense(pair<double, double> agent, vector<Segment> track);
 
 using namespace std;
 // Credit to Jin Fagang from https://github.com/jinfagang/Q-Learning
 // for basis of this code.
 
 // map relevant definitions
-#define NUM_ACTIONS 4 //down, up, left, right: {-1, 0}, {1, 0}, {0, -1}, {0, 1}
-#define N 3 //size of map NxN
-#define MAP_SIZE 9 //total size of map, MAP_SIZE = NxN
+#define NUM_ACTIONS 8 //down, up, left, right :
+                      //upleft, upright, downleft, downright: {1, -1}, {1, 1}, {-1, -1}, {-1, 1}
+#define N 50 //size of map NxN
+#define MAP_SIZE 2500 //total size of map, MAP_SIZE = NxN
+
+
 
 // Q-learning relevant definitions
 #define ALPHA .1 //weight of newly learned behavior
@@ -40,12 +37,14 @@ int map7[7][7] = {{-1, -1, -1, -1, -1, -1, -1},
                  {-1,  0,  0,  0,-25,  0, -1},
                  {-1,100, -1, -1, -1, -1, -1}};
 
-int map[3][3] = {{   0,   0,   0},
+int map3[3][3] = {{   0,   0,   0},
                  {-100,   0, -100},
                  {-100,   0,  150}};
 
-double Q[MAP_SIZE][NUM_ACTIONS];
-double R[MAP_SIZE][NUM_ACTIONS];
+int map[N][N] = {0};
+
+double Q[MAP_SIZE][NUM_ACTIONS] = {0};
+double R[MAP_SIZE][NUM_ACTIONS] = {0};
 
 //initialize all values in Q to zero
 void buildQ() {
@@ -104,6 +103,10 @@ void buildR() {
             R[i][1] = map[(i / N) - 1][i % N];
             R[i][2] = map[i / N][(i % N) - 1];
             R[i][3] = map[i / N][(i % N) + 1];
+            R[i][4] = map[(i / N) + 1][(i % N) - 1];
+            R[i][5] = map[(i / N) + 1][(i % N) + 1];
+            R[i][6] = map[(i / N) - 1][(i % N) - 1];
+            R[i][7] = map[(i / N) - 1][(i % N) + 1];
         }
     }
 }
@@ -142,11 +145,19 @@ void print_r() {
 bool check_action(int state, int action) {
     if(action == 0 && (state/N + 1) > N-1) {
         return false;
-    } else if(action == 1 && (state/N - 1) < 0) {
+    } else if(action == 1 && (state/N - 1) < 0 && map[state/N - 1][state%N] == -999) {
         return false;
-    } else if(action == 2 && (state%N - 1) < 0) {
+    } else if(action == 2 && (state%N - 1) < 0 && map[state/N][state%N - 1] == -999) {
         return false;
-    } else if(action == 3 && (state%N + 1) > N-1) {
+    } else if(action == 3 && (state%N + 1) > N-1 && map[state/N][state%N + 1] == -999) {
+        return false;
+    } else if(action == 4 && map[state/N + 1][state%N - 1] == -999) {
+        return false;
+    } else if(action == 5 && map[state/N + 1][state%N + 1] == -999) {
+        return false;
+    } else if(action == 6 && map[state/N - 1][state%N - 1] == -999) {
+        return false;
+    } else if(action == 7 && map[state/N - 1][state%N + 1] == -999) {
         return false;
     }
     return true;
@@ -178,17 +189,20 @@ int update_state(int state, int action) {
     else if(action == 1) new_state = state - N;
     else if(action == 2) new_state = state - 1;
     else if(action == 3) new_state = state + 1;
+    else if(action == 4) new_state = state + N - 1;
+    else if(action == 5) new_state = state + N + 1;
+    else if(action == 6) new_state = state - N - 1;
+    else if(action == 7) new_state = state - N + 1;
     return  new_state;
 }
 
 /*
- * Runs one iteration of finding the goal state.
+ * Runs one iteration of finding the goal state on the track.
  */
-int episode_iterator(int init_state){
+int episode_iterator(int init_state, vector<Segment> track){
     int next_state = -1;
     int action = -1;
     double old_q;
-
     int step=0;
     while (init_state != DESTINATION){
         //cout << "-- step " << step << ": initial state: " << init_state << endl;
@@ -197,6 +211,9 @@ int episode_iterator(int init_state){
 //        std::uniform_real_distribution<double> urd(0,1);
 //        std::default_random_engine re;
 //        double r = urd(re);
+
+        sense(make_pair(init_state/N, init_state%N), track);
+
         double r = (float) rand()/RAND_MAX ;
         action = rand() % NUM_ACTIONS;
         //random chance to select random action
@@ -226,15 +243,20 @@ int episode_iterator(int init_state){
  * Runs EPISODES number of iterations of finding the goal state to create a converged Q-matrix.
  */
 void train(int init_state){
-    int initial_state = init_state; // FIXME: what's this?
-
+    vector<Segment> track = track1();
+    for(auto &seg : track) {
+        seg.p1.first *= (double)(N/6);
+        seg.p2.first *= (double)(N/6);
+        seg.p1.second *= (double)(N/6);
+        seg.p2.second *= (double)(N/6);
+    }
     // start random
     srand((unsigned)time(NULL));
     //srand(1);
     cout << "[INFO] start training..." << endl;
     for (int i = 0; i < EPISODES; ++i) {
 //        cout << "[INFO] Episode: " << i << endl;
-        episode_iterator(init_state);
+        episode_iterator(init_state, track);
         //cout << "-- updated Q matrix: " << endl;
         //print_q();
     }
@@ -242,12 +264,12 @@ void train(int init_state){
 }
 
 void run_Qlearing() {
-    buildQ();
+    //buildQ();
     buildR();
 
     cout << "Q matrix:" << endl;
     print_q();
-
+    //TODO: input valid initial state
     train(0);
     cout << "Q convergence matrix:" << endl;
     print_q();
@@ -311,6 +333,50 @@ void run_sensors() {
     update_track_csv(track);
     update_senseg_csv(agent, sensor_segments);
 }
+
+
+void sense(pair<double, double> agent, vector<Segment> track) {
+    //vector<pair<double, pair<double, double>>> sensors = sensor_16(agent);
+    vector<Segment> sensor_segments = get_sensor_segments(track, agent, sensor_16(agent));
+    vector<pair<int, int>> int_points;
+    for(auto &s : sensor_segments) {
+        int_points.push_back(make_pair((int)(s.p2.first), (int)(s.p2.second)));
+    }
+    for(auto p : int_points) {
+        map[p.first][p.second] = -999;
+    }
+}
+
+void new_Q() {
+    pair<double, double> agent = make_pair(-3, 4);
+    agent.first *= (double)(N/6);
+    agent.second *= (double)(N/6);
+    //gets segments representing sensors, functions and such found in sensors.cpp and Segment.cpp
+    vector<Segment> track = track1();
+    for(auto &seg : track) {
+        seg.p1.first *= (double)(N/6);
+        seg.p2.first *= (double)(N/6);
+        seg.p1.second *= (double)(N/6);
+        seg.p2.second *= (double)(N/6);
+    }
+    vector<pair<double, pair<double, double>>> sensors = sensor_16(agent);
+    vector<Segment> sensor_segments = get_sensor_segments(track, agent, sensors);
+    vector<pair<int, int>> int_points;
+    for(auto &s : sensor_segments) {
+        int_points.push_back(make_pair((int)(s.p2.first), (int)(s.p2.second)));
+    }
+
+
+    cout << "agent coordinates: " << agent.first << ", " << agent.second << endl;
+    cout << "All segments are from agent -> intersection, since agent it always the same it is not repeated,\nonly the intersection points are displayed" << endl;
+    for(auto segment : sensor_segments) {
+        //minimum formatting for ease of copy and pasting into
+        cout << segment.p2.first << ", " << segment.p2.second << endl;
+    }
+    update_track_csv(track);
+    update_senseg_csv(agent, sensor_segments);
+}
+
 
 int main() {
     int run = 1;
