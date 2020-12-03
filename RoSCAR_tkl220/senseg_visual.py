@@ -48,7 +48,8 @@ if __name__ == '__main__':
             if i%50 == 0:
                 ganim.append([grid])
                 grid = []
-    ganim = np.array(ganim)
+    ganim = np.array(ganim, dtype=np.int8)
+    # ganim[:,:,23,38] = 2
     wc = mc.LineCollection(walls, linewidths=2)
     sc = mc.LineCollection(sensors, linewidths=0.5, colors='#ff4545')
 
@@ -64,12 +65,16 @@ if __name__ == '__main__':
 
     # Manual animation
     for i in range(len(sanim)):
+        # print(i)
+        # if ganim[i,:,23,38] == 1: break
+        # if i == 1:
+        #     input("Press Enter to continue...")
         sc = mc.LineCollection(sanim[i], linewidths=0.5, colors='#ff4545')
         ax.clear()
         ax.imshow(ganim[i].T)
         fig.gca().invert_yaxis()
         ax.add_collection(sc)
-        pl.pause(0.001)
+        pl.pause(0.01)
 
     fig.show()
     matplotlib.pyplot.show()

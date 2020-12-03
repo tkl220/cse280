@@ -82,25 +82,25 @@ void draw_line(Segment seg, vector<int> actions) {
  */
 // bool check_action(int state, std::pair<int,int> action) {
 bool check_action(int state, int action) {
-    if(action == 0 && gridworld[state%N + 1][state/N] == 1) {               // N
+    if(action == 0 && gridworld[state%N][state/N + 1] == 1) {               // N
         return false;
     } else if(action == 1 && gridworld[state%N + 1][state/N] == 1) {        // E
         return false;
-    } else if(action == 2 && gridworld[state%N - 1][state/N] == 1) {        // S
+    } else if(action == 2 && gridworld[state%N][state/N - 1] == 1) {        // S
         return false;
-    } else if(action == 3 && gridworld[state%N][state/N - 1] == 1) {        // W
+    } else if(action == 3 && gridworld[state%N - 1][state/N] == 1) {        // W
         return false;
     } else if((action == 4 && ((gridworld[state%N + 1][state/N + 1] == 1)
-        || (gridworld[state%N + 1][state/N] == 1 && gridworld[state%N + 1][state/N] == 1)))) {    // NE
+        || (gridworld[state%N][state/N + 1] == 1 && gridworld[state%N + 1][state/N] == 1)))) {    // NE
         return false;
-    } else if((action == 5 && ((gridworld[state%N - 1][state/N + 1] == 1)
-        || (gridworld[state%N - 1][state/N] == 1 && gridworld[state%N + 1][state/N] == 1)))) {    // SE
+    } else if((action == 5 && ((gridworld[state%N + 1][state/N - 1] == 1)
+        || (gridworld[state%N][state/N - 1] == 1 && gridworld[state%N + 1][state/N] == 1)))) {    // SE
         return false;
     } else if((action == 6 && ((gridworld[state%N - 1][state/N - 1] == 1)
         || (gridworld[state%N - 1][state/N] == 1 && gridworld[state%N][state/N - 1] == 1)))) {    // SW
         return false;
-    } else if((action == 7 && ((gridworld[state%N + 1][state/N - 1] == 1)
-        || (gridworld[state%N + 1][state/N] == 1 && gridworld[state%N][state/N - 1] == 1)))) {    // NW
+    } else if((action == 7 && ((gridworld[state%N - 1][state/N + 1] == 1)
+        || (gridworld[state%N - 1][state/N] == 1 && gridworld[state%N][state/N + 1] == 1)))) {    // NW
         return false;
     }
     return true;
@@ -126,7 +126,7 @@ int max_q_action(int state){
     }
     int idx = rand()%equal_actions.size();
     action = equal_actions[idx];
-    return action; // FIXME: This is empty at step=25 called by line 176
+    return action;
 }
 
 /*
@@ -160,7 +160,7 @@ int episode_iterator(int init_state){
     // while (init_state != DESTINATION) {
 
         run_sensors(init_state);
-        write_out_grid_update(gridworld);
+        // write_out_grid_update(gridworld);
 
         // get next action
         double r = (float) rand()/RAND_MAX ;
@@ -194,6 +194,7 @@ void train(int init_state){
     cout << "[INFO] start training..." << endl;
     for (int i = 0; i < EPISODES; ++i) {
         episode_iterator(init_state);
+        cout << i << "\t";
     }
     cout << "[INFO] end training..." << endl;
 }
@@ -203,6 +204,7 @@ void run_Qlearing(int state) {
         int action = max_q_action(state);
         state = update_state(state, action);    
         pair<double, double> agent(state%N, state/N);    
+        write_out_gridworld(gridworld);
         update_senseg_csv(agent,get_sensor_segments(track, agent, sensor_16(agent)));
     }
 }
@@ -256,7 +258,7 @@ void run_sensors(int init_state) {
         gridworld[(int)(segment.p2.first + 0.5)][(int)(segment.p2.second + 0.5)] = 1;
     }
     // update_track_csv(track);
-    update_senseg_csv(agent, sensor_segments);
+    // update_senseg_csv(agent, sensor_segments);
 }
 
 void build_checkpoints() {
