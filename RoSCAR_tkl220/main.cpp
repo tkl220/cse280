@@ -29,11 +29,12 @@ using namespace std;
 int gridworld[N][N] = {0};
 double Q[MAP_SIZE][NUM_ACTIONS] = {0};
 double R[MAP_SIZE][NUM_ACTIONS] = {0};
-// 20,000 doubles = 160kB?
+// Forward declarations
 vector<Segment> track;
 void run_sensors(int init_state);
 void update_senseg_csv(pair<double, double> agent, vector<Segment> sensor_segments);
 void write_out_gridworld(int (&grid)[N][N]);
+void write_out_grid_update(int (&grid)[N][N]);
 
 int action_inverse(int action) {
     if(action == 0) {
@@ -89,17 +90,17 @@ bool check_action(int state, int action) {
         return false;
     } else if(action == 3 && gridworld[state%N][state/N - 1] == 1) {        // W
         return false;
-    } else if((action == 4 && (gridworld[state%N + 1][state/N + 1] == 1)
-        || (gridworld[state%N + 1][state/N] == 1 && gridworld[state%N + 1][state/N] == 1))) {    // NE
+    } else if((action == 4 && ((gridworld[state%N + 1][state/N + 1] == 1)
+        || (gridworld[state%N + 1][state/N] == 1 && gridworld[state%N + 1][state/N] == 1)))) {    // NE
         return false;
-    } else if((action == 5 && (gridworld[state%N - 1][state/N + 1] == 1)
-        || (gridworld[state%N - 1][state/N] == 1 && gridworld[state%N + 1][state/N] == 1))) {    // SE
+    } else if((action == 5 && ((gridworld[state%N - 1][state/N + 1] == 1)
+        || (gridworld[state%N - 1][state/N] == 1 && gridworld[state%N + 1][state/N] == 1)))) {    // SE
         return false;
-    } else if((action == 6 && (gridworld[state%N - 1][state/N - 1] == 1)
-        || (gridworld[state%N - 1][state/N] == 1 && gridworld[state%N][state/N - 1] == 1))) {    // SW
+    } else if((action == 6 && ((gridworld[state%N - 1][state/N - 1] == 1)
+        || (gridworld[state%N - 1][state/N] == 1 && gridworld[state%N][state/N - 1] == 1)))) {    // SW
         return false;
-    } else if((action == 7 && (gridworld[state%N + 1][state/N - 1] == 1)
-        || (gridworld[state%N + 1][state/N] == 1 && gridworld[state%N][state/N - 1] == 1))) {    // NW
+    } else if((action == 7 && ((gridworld[state%N + 1][state/N - 1] == 1)
+        || (gridworld[state%N + 1][state/N] == 1 && gridworld[state%N][state/N - 1] == 1)))) {    // NW
         return false;
     }
     return true;
@@ -125,7 +126,7 @@ int max_q_action(int state){
     }
     int idx = rand()%equal_actions.size();
     action = equal_actions[idx];
-    return action; // This is empty at step=25 line 176
+    return action; // FIXME: This is empty at step=25 called by line 176
 }
 
 /*
@@ -159,7 +160,7 @@ int episode_iterator(int init_state){
     // while (init_state != DESTINATION) {
 
         run_sensors(init_state);
-        write_out_gridworld(gridworld);
+        write_out_grid_update(gridworld);
 
         // get next action
         double r = (float) rand()/RAND_MAX ;
@@ -208,6 +209,17 @@ void run_Qlearing(int state) {
 
 void write_out_gridworld(int (&grid)[N][N]) {
     ofstream out_file("grid.csv");
+    for (size_t i = 0; i < N; i++) {
+        for (size_t j = 0; j < N; j++) {
+            out_file << grid[i][j] << ",";
+        }
+        out_file << endl;
+    }
+    return;
+}
+
+void write_out_grid_update(int (&grid)[N][N]) {
+    ofstream out_file("grid.csv", std::ios_base::app);
     for (size_t i = 0; i < N; i++) {
         for (size_t j = 0; j < N; j++) {
             out_file << grid[i][j] << ",";

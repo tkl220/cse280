@@ -23,6 +23,7 @@ if __name__ == '__main__':
     sensors = []
     sanim = []
     grid = []
+    ganim = []
     i = 0
     with open('track.csv', 'r') as track_csv:
         csv_reader = csv.reader(track_csv, delimiter=',')
@@ -38,15 +39,20 @@ if __name__ == '__main__':
             if i%16 == 0:
                 sanim.append(sensors)
                 sensors = []
+    i = 0
     with open('grid.csv', 'r') as grid_csv:
         csv_reader = csv.reader(grid_csv, delimiter=',')
         for row in csv_reader:
             grid.append([int(x) for x in row[:-1]])
-    grid = np.array(grid)
+            i += 1
+            if i%50 == 0:
+                ganim.append([grid])
+                grid = []
+    ganim = np.array(ganim)
     wc = mc.LineCollection(walls, linewidths=2)
     sc = mc.LineCollection(sensors, linewidths=0.5, colors='#ff4545')
 
-    # Plotem
+    # Init
     fig, ax = pl.subplots()
     # ax.imshow(grid.T)
     ax.add_collection(wc)
@@ -56,10 +62,11 @@ if __name__ == '__main__':
     ax.grid(True)
     fig.gca().invert_yaxis()
 
+    # Manual animation
     for i in range(len(sanim)):
         sc = mc.LineCollection(sanim[i], linewidths=0.5, colors='#ff4545')
         ax.clear()
-        ax.imshow(grid.T)
+        ax.imshow(ganim[i].T)
         fig.gca().invert_yaxis()
         ax.add_collection(sc)
         pl.pause(0.001)
