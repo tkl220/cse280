@@ -33,11 +33,7 @@ double R[MAP_SIZE][NUM_ACTIONS] = {0};
 vector<Segment> track;
 void run_sensors(int init_state);
 void update_senseg_csv(pair<double, double> agent, vector<Segment> sensor_segments);
-
-// TODO: set up checkpoints in R matrix
-// positive reward for going clockwise
-// negative reward for going counter-clockwise
-// y = int(y1 + dy*(x - x1) / dx) doesn't work for vertical lines! - just transpose it?
+void write_out_gridworld(int (&grid)[N][N]);
 
 int action_inverse(int action) {
     if(action == 0) {
@@ -85,21 +81,25 @@ void draw_line(Segment seg, vector<int> actions) {
  */
 // bool check_action(int state, std::pair<int,int> action) {
 bool check_action(int state, int action) {
-    if(action == 0 && gridworld[state/N + 2][state%N] == 1) {
+    if(action == 0 && gridworld[state%N + 1][state/N] == 1) {               // N
         return false;
-    } else if(action == 1 && gridworld[state/N][state%N + 2] == 1) {
+    } else if(action == 1 && gridworld[state%N + 1][state/N] == 1) {        // E
         return false;
-    } else if(action == 2 && gridworld[state/N - 2][state%N] == 1) {
+    } else if(action == 2 && gridworld[state%N - 1][state/N] == 1) {        // S
         return false;
-    } else if(action == 3 && gridworld[state/N][state%N - 2] == 1) {
+    } else if(action == 3 && gridworld[state%N][state/N - 1] == 1) {        // W
         return false;
-    } else if(action == 4 && gridworld[state/N + 2][state%N + 2] == 1) {
+    } else if((action == 4 && (gridworld[state%N + 1][state/N + 1] == 1)
+        || (gridworld[state%N + 1][state/N] == 1 && gridworld[state%N + 1][state/N] == 1))) {    // NE
         return false;
-    } else if(action == 5 && gridworld[state/N - 2][state%N + 2] == 1) {
+    } else if((action == 5 && (gridworld[state%N - 1][state/N + 1] == 1)
+        || (gridworld[state%N - 1][state/N] == 1 && gridworld[state%N + 1][state/N] == 1))) {    // SE
         return false;
-    } else if(action == 6 && gridworld[state/N - 2][state%N - 2] == 1) {
+    } else if((action == 6 && (gridworld[state%N - 1][state/N - 1] == 1)
+        || (gridworld[state%N - 1][state/N] == 1 && gridworld[state%N][state/N - 1] == 1))) {    // SW
         return false;
-    } else if(action == 7 && gridworld[state/N + 2][state%N - 2] == 1) {
+    } else if((action == 7 && (gridworld[state%N + 1][state/N - 1] == 1)
+        || (gridworld[state%N + 1][state/N] == 1 && gridworld[state%N][state/N - 1] == 1))) {    // NW
         return false;
     }
     return true;
@@ -112,7 +112,7 @@ int max_q_action(int state){
     double max = -999;
     int action = -1;
     int i = 0;
-    vector<int> equal_actions;
+    vector<int> equal_actions = {};
     for (i = 0; i < NUM_ACTIONS; i++) {
         if (Q[state][i] >= max && check_action(state, i)) {
             if (Q[state][i] > max) {
@@ -123,7 +123,9 @@ int max_q_action(int state){
             action = i;
         }
     }
-    return equal_actions[rand()%equal_actions.size()];
+    int idx = rand()%equal_actions.size();
+    action = equal_actions[idx];
+    return action; // This is empty at step=25 line 176
 }
 
 /*
@@ -157,6 +159,7 @@ int episode_iterator(int init_state){
     // while (init_state != DESTINATION) {
 
         run_sensors(init_state);
+        write_out_gridworld(gridworld);
 
         // get next action
         double r = (float) rand()/RAND_MAX ;
@@ -185,7 +188,7 @@ int episode_iterator(int init_state){
  */
 void train(int init_state){
     // start random
-    // srand((unsigned)time(NULL));
+    // srand((unsigned)time(NULL)); //FIXME: uncomment this (debugging only)
     srand(1);
     cout << "[INFO] start training..." << endl;
     for (int i = 0; i < EPISODES; ++i) {
@@ -230,10 +233,7 @@ void update_senseg_csv(pair<double, double> agent, vector<Segment> sensor_segmen
 
 }
 
-int rs = 0;
 void run_sensors(int init_state) {
-    rs++;
-    cout << rs << endl;
     // NB: This is the only place we should be dealing with decimals - keep casting to a minimum overall
     pair<int, int> agent = make_pair(init_state%N, init_state/N);
 
@@ -241,13 +241,15 @@ void run_sensors(int init_state) {
     vector<pair<double, pair<double, double>>> sensors = sensor_16(agent);
     vector<Segment> sensor_segments = get_sensor_segments(track, agent, sensors);
     for(auto segment : sensor_segments) {
-        gridworld[(int)(segment.p2.first)][(int)(segment.p2.second)] = 1;
+        gridworld[(int)(segment.p2.first + 0.5)][(int)(segment.p2.second + 0.5)] = 1;
     }
     // update_track_csv(track);
     update_senseg_csv(agent, sensor_segments);
 }
 
 void build_checkpoints() {
+    int old_n = 8;
+
     vector<Segment> checkpoints;
     // Turns -------------------------
     checkpoints.push_back(Segment(make_pair(-2,6), make_pair(-1.25,4.75)));
@@ -256,13 +258,20 @@ void build_checkpoints() {
     checkpoints.push_back(Segment(make_pair(1.25,1.75), make_pair(2,0)));
     checkpoints.push_back(Segment(make_pair(-1.25,1.75), make_pair(-2,0)));
     checkpoints.push_back(Segment(make_pair(-2.25,3.75), make_pair(-4,4)));
-    // Straightaways-----------------
-    , {0, 4, 1}
-    , {2, 5, 1}
-    , {6, 2, 5}
-    , {3, 6, 2}
-    , {0, 7, 3}
-    , {0, 7, 4}
+    transform(checkpoints.begin(), checkpoints.end(), checkpoints.begin(), 
+        [old_n](Segment &seg){return Segment(make_pair(seg.p1.first+old_n/2, seg.p1.second), 
+                                            make_pair(seg.p2.first+old_n/2, seg.p2.second));}
+    );
+    transform(checkpoints.begin(), checkpoints.end(), checkpoints.begin(), 
+        [old_n](Segment &seg){return Segment(make_pair(seg.p1.first*N/old_n, seg.p1.second*N/old_n),
+                                            make_pair(seg.p2.first*N/old_n, seg.p2.second*N/old_n));}
+    );
+    draw_line(checkpoints[0], {0, 4, 1});
+    draw_line(checkpoints[1], {2, 5, 1});
+    draw_line(checkpoints[2], {6, 2, 5});
+    draw_line(checkpoints[3], {3, 6, 2});
+    draw_line(checkpoints[4], {0, 7, 3});
+    draw_line(checkpoints[5], {0, 7, 4});
 }
 
 int main() {
@@ -288,8 +297,10 @@ int main() {
     // Do the Q -----------------------
     ofstream out_file("sensor_segments.csv");
     out_file.close(); // Clear it
+    ofstream out_file1("grid.csv");
+    out_file.close(); // Clear it
     train(N*y+x);
-    run_Qlearing(N*y+x);
+    // run_Qlearing(N*y+x);
     write_out_gridworld(gridworld);
     return 0;
 }
