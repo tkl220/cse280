@@ -18,7 +18,7 @@
 
 ### **** Simulation.cpp (BEST working file- car runs in a circle)
     --  most recent file I have been working on -- this file simulates the robot running on a circular path
-    Similar to the previoud two files:
+    Similar to the previous two files:
     See the main method to understand the flow of the model, basically:
         each complete for loop ends up moving the car 1 second forward, each iteration moves it 0.1 second forward
         in each for loop you:
