@@ -9,5 +9,5 @@ The executable is called `roboq` by default (this can be changed);
 2. If the first argument is a number `S`, it outputs a log of the first `S` steps in the training process and a log of what it knows about the map via the sensor model for each step. This is mostly random movements and it is used to demonstrate the sensor model building the map.  
 
 Executing in either manner will clear the previous logs.
-### Visualization
-`senseg_visual.py` simply reads the logs output by `roboq` and animates them. It depends on matplotlib, pylab, and numpy.
+### Visualization: `python visual.py [file.mp4]`
+`senseg_visual.py` simply reads the logs output by `roboq` and animates them. It depends on matplotlib and numpy. It will save a video of the animation in the optional command line argument if one is passed. Otherwise, it will display the animation in a new window.
