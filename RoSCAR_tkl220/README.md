@@ -10,4 +10,4 @@ The executable is called `roboq` by default (this can be changed);
 
 Executing in either manner will clear the previous logs.
 ### Visualization: `python visual.py [file.mp4]`
-`senseg_visual.py` simply reads the logs output by `roboq` and animates them. It depends on matplotlib and numpy. It will save a video of the animation in the optional command line argument if one is passed. Otherwise, it will display the animation in a new window.
+`visual.py` simply reads the logs output by `roboq` and animates them. It depends on matplotlib and numpy. It will save a video of the animation in the optional command line argument if one is passed. Otherwise, it will display the animation in a new window.
