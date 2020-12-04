@@ -1,22 +1,22 @@
 import csv
 import matplotlib.pyplot as plt
-
-x = []
-y = []
-
-with open('trajectory.txt') as csv_file:
-    csv_reader = csv.reader(csv_file, delimiter=',')
-    first = True
-    for row in csv_reader:
-        x.append(row[0])
-        y.append(row[1])
+import numpy as np
 
 
+#https://scriptverse.academy/tutorials/python-matplotlib-plot-function.html
 
-# plot the x and y points
-plt.plot(x, y, label = 'trajectory') 
+# plot path for reference (circle in this case)
+figure, axes = plt.subplots()
+draw_circle = plt.Circle((0, 5), 5, fill = False)
 
-  
+axes.set_aspect(1)
+axes.add_artist(draw_circle)
+plt.title('Circle')
+
+# load the text from the trajectory.txt file
+x, y = np.loadtxt('trajectory.txt', delimiter=',', unpack=True)
+plt.plot(x, y, 'ro', label = 'trajectory')
+
 # naming the x axis 
 plt.xlabel('x axis') 
 # naming the y axis 
@@ -25,7 +25,11 @@ plt.ylabel('y axis')
 # giving a title to my graph 
 plt.title('Plot of Trajectory') 
 
-plt.axis([-2, 10, -1, 15])
-# function to show the plot 
+# show the legend
 plt.legend()
-plt.show() 
+
+# set axes: [(lowest x, highest x, lowest y, highest y)]
+plt.axis([-10, 10, -10, 10])
+
+# shows the plot
+plt.show()

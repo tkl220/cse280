@@ -6,11 +6,25 @@
 
 using namespace std;
 
+const float pi = 3.14159265358979323846;
+float startAng = 3 * pi / 2;
+float add = pi/80;
+float angGoal = (3 * pi / 2) - pi/10;
+
+
 // the (x,y) position of the point
 struct position {
     float x;
     float y;
     float ang;
+};
+
+// r^2 = (x - x_center)^2 + (y - y_center)^2
+// where r is the radius, and (x_center, y_center) is the center of the circle
+struct circle {
+    float r;
+    float x_center;
+    float y_center;
 };
 
 // the (x,y) position and other state info of a possible point
@@ -21,16 +35,20 @@ struct statePosTraj {
     float v;
 };
 
-// Ax + By + C = 0;
-//
-// slope: (-a/b)
-// y-intercept: (-c/b)
-//
-struct path {
-    float a;
-    float b;
-    float c;
-};
+// ang in radians
+float getArcLength(position p1, position p2, circle theCircle) {
+    // find angle between 2 positions
+    float ang = atan2(p2.y - theCircle.y_center, p2.x - theCircle.x_center) - atan2(p1.y - theCircle.y_center, p1.x - theCircle.x_center);
+    return ang;
+}
+
+// ang in radians
+position getPointOnCircle(float ang, circle theCircle) {
+    float x = theCircle.r * cos(ang) + theCircle.x_center;
+    float y = theCircle.r * sin(ang) + theCircle.y_center;
+    position pos = {x, y, 0};
+    return pos;
+}
 
 // function for the equation of calculating a possible next position
 position eqn(position &oldPos, float angle, float v, float w, float deltTime) {
@@ -38,8 +56,6 @@ position eqn(position &oldPos, float angle, float v, float w, float deltTime) {
     float newY = 0;
     float newAngle = 0;
     position newPos;
-
-    const float pi = 3.14159265358979323846;
 
     // "90 -" to make the angles how we want to input them
     float correctAng = 90 - oldPos.ang - angle;
@@ -80,17 +96,12 @@ position eqn(position &oldPos, float angle, float v, float w, float deltTime) {
     return newPos;
 }
 
-// sorting function used in scoring 
-bool sortbysec(const pair<int,int> &a, const pair<int,int> &b) { 
-    return (a.second < b.second);
-} 
-
-statePosTraj scoreTrajByGoal(std::vector<statePosTraj> &posTraj, path &thePath, position &goal) {
+statePosTraj scoreTrajByGoal(std::vector<statePosTraj> &posTraj, circle theCircle, position &goal, position lastPos) {
     
     int index = -1;
 
     // check distance to the line, if it's < some amount, make the goal even closer
-    printf("(%f, %f)", goal.x, goal.y);
+    //printf("(%f, %f)\n", goal.x, goal.y);
     float dist;
     float shortestDist = 9999999;
     for (int i = 0; i < posTraj.size(); i++) {
@@ -101,24 +112,15 @@ statePosTraj scoreTrajByGoal(std::vector<statePosTraj> &posTraj, path &thePath, 
         }
     }
 
-    float angPath = abs(atan(-(thePath.a / thePath.b)));
-    printf("the angle is %f \n", angPath);
+    position bestPos = eqn(lastPos, posTraj.at(index).newAng, posTraj.at(index).v, posTraj.at(index).w, 0.1);
 
-    float slope = (-thePath.a/thePath.b);
-    // how to know if path tilted left or right? --> +x if right, -x if left
-    if (slope > 0) {
-        goal.x = goal.x + cos(angPath);
-    } else {
-        goal.x = goal.x - cos(angPath);
-    }
+    // find arc dist between lastPos and bestPos
+    float arcAng = abs(getArcLength(lastPos, bestPos, theCircle));
+    angGoal -= arcAng;
+    // change the goal
+    goal = getPointOnCircle(angGoal, theCircle);
+    //printf("(%f, %f)\n", goal.x, goal.y);
 
-    // TODO: add something to determine which y-way we wanna go?
-    goal.y = goal.y + sin(angPath);
-
-    //printf("the goal is (%f, %f) \n", goal.x, goal.y);
-
-
-    printf("the chosen best path is x = %.2f, y = %.2f, ang = %.2f \n", posTraj.at(index).pos.x, posTraj.at(index).pos.y, posTraj.at(index).pos.ang);
     // return state & position at the index of the lowest score
     return posTraj.at(index);
 }
@@ -133,28 +135,12 @@ statePosTraj scoreTrajByGoal(std::vector<statePosTraj> &posTraj, path &thePath, 
 * 
 * returns: an array containing (x,y, ang) structs representing possible locations the car could go
 */
-std::vector<statePosTraj> genTraj(std::vector<position> traj, path &thePath) {
+std::vector<statePosTraj> genTraj(std::vector<position> traj) {
     // get the current position of the car
     position currPos = traj.back();
-    printf("traj.back is: x = %.2f, y = %.2f, ang = %.2f \n", currPos.x, currPos.y, currPos.ang);
 
     // vector of possible trajectories
     std::vector<statePosTraj> posTraj;
-    
-    float dist = abs((thePath.a * currPos.x) + (thePath.b * currPos.y) + thePath.c) / sqrt(pow(thePath.a, 2) + pow(thePath.b, 2));
-    
-    // just added this, to follow the path if v close, indicated by -5 (see check in scoreTraj if it == -5)
-    if (dist < .3) { // ??? || currPos.x == NULL
-        statePosTraj theState;
-        theState.pos = currPos;
-        theState.w = -5;
-        theState.v = -5;
-        theState.newAng = 0;
-        posTraj.push_back(theState);
-        return posTraj;
-    }
-
-    // center, extremes: (1, -1, -angle?), (1, 0, 0?), (1, 1, +angle?)
 
     float angle = 0;
     float max = 7; // can change this, but keep it odd so we always have a direct middle point (to go straight)
@@ -184,10 +170,9 @@ std::vector<statePosTraj> genTraj(std::vector<position> traj, path &thePath) {
         theState.v = v;
         theState.newAng = angle;
         posTraj.push_back(theState);
-        printf("(%.2f, %.2f)\n", theState.pos.x, theState.pos.y);
-        //printf("the possible state: w = %.2f, v = %.2f, x = %.2f, y = %.2f, ang = %.2f \n", w, v, theState.pos.x, theState.pos.y, theState.pos.ang);
+        //("(%.2f, %.2f)\n", theState.pos.x, theState.pos.y);
     }
-    printf("\n");
+    //printf("\n");
     return posTraj;
 }
 
@@ -202,10 +187,6 @@ std::vector<statePosTraj> genTraj(std::vector<position> traj, path &thePath) {
 */
 int main() {
     // receive state --> curr position, and the path
-    
-    // incorporate a path --> a line, slope and intercept
-    //      simple geometry for intercepting lines, finding closest perpendicular
-    //      cross product for direction of path
 
     std::vector<position> traj;
     traj.push_back(position()); // instead, recieve the state somehow and push_back that
@@ -214,52 +195,45 @@ int main() {
     traj.at(0).ang = 0;
 
     int exit = 1;
-    
-    // for now, create a path:
-    //      ax + by + c = 0;
-    //      slope: (-a/b) -1
-    //      y-intercept: (-c/b)
-    path thePath;
-    thePath.a = 1;
-    thePath.b = 1;
-    thePath.c = -7;
+
+    // circle path: 
+    circle theCircle = {5, 0, 5};
 
     // position representing the starting goal position for the car (a point on the path, in the future)
     // goal = {x, y, angle}
-    position goal = {3.5, 3.5, abs(atan(-(thePath.a / thePath.b)))};
+    position goal = getPointOnCircle(angGoal, theCircle);
 
+    int count = 0;
 
-    // NOTE: thePath and goal are passed in, and goal is a point on thePath
-
-
-    // get initial distance from origin to the line
-    float distFromOrigin = abs(thePath.c / sqrt(pow(thePath.a, 2) + pow(thePath.b, 2)));
+    // NOTE: theCircle and goal are passed in, and goal is a point on theCircle
 
     do {
         // moves the car 1 second towards the path
         for (int i = 0; i < 10; i++) {
             // generate possible trajectories for the car
-            std::vector<statePosTraj> posTraj = genTraj(traj, thePath);
+            std::vector<statePosTraj> posTraj = genTraj(traj);
             
-            statePosTraj bestPosState = scoreTrajByGoal(posTraj, thePath, goal);
-            //printf("the x pos is %.2f \n", bestPosState.pos.x);
+            statePosTraj bestPosState = scoreTrajByGoal(posTraj, theCircle, goal, traj.back());
 
             // calculate moving just 0.1 seconds in that direction
             position actualMove = eqn(traj.back(), bestPosState.newAng, bestPosState.v, bestPosState.w, 0.1);
+            
             traj.push_back(actualMove);
-            //printf("Position is (%.2f, %.2f, %.2f) after %.1f  second(s) \n", actualMove.x, actualMove.y, actualMove.ang, (i+1)*0.1);
+            printf("Position is (%.2f, %.2f) after %.1f  second(s) \n", actualMove.x, actualMove.y, (1 * count) + (i+1)*0.1);
         }
+        count++;
         
         // exit or continue the program
         printf("EXIT: type 0, CONTINUE: type 1 \n");
         scanf("%d", &exit);
     } while(exit != 0);
+
     printf("\n\n\n The Trajectory: \n\n");
 
     std::ofstream myfile;
     myfile.open("trajectory.txt");
     for (int i = 0; i < traj.size(); i++) {
-        string theString = to_string(traj[i].x) + "," +  to_string(traj[i].y) + "\n";
+        string theString = to_string(traj[i].x) + "," + to_string(traj[i].y) + "\n";
         myfile << theString;
         printf("(%f, %f)\n", traj[i].x, traj[i].y);
     }
