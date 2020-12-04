@@ -1,7 +1,0 @@
-<launch>
-    <node name="aggregate" pkg="dv_perception" type="perception_agg"></node>
-    <node name="lidar" pkg="dv_perception" type="lidar"></node>
-    <node name="odometer" pkg="dv_perception" type="odometer"></node>
-    <node name="imu" pkg="dv_perception" type="imu"></node>
-    <node name="camera" pkg="dv_perception" type="camera"></node>
-</launch>
