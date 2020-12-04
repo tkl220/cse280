@@ -13,10 +13,10 @@
             3. moves 0.1 second in that direction, and continues from that point
         once you exit, the points will be passed to the trajectory.txt file, and also printed to the terminal
 
-### ** ScoreTesting.cpp (this file shows the car approaching a line)
+### ** ScoreTesting.cpp (shows car approaching a line)
     -- more recent file I have been working on - this file adds the concept of a goal point which we are always chasing and is always moving further away, so this file is the same as TrajectoryRollout.cpp, but the scoring method is different, and working better. The other files I am explaining may bring clarity to how it's working as a whole, but this file is the most important to look at.
 
-### **** Simulation.cpp (BEST working file -- car runs in a circle)
+### **** Simulation.cpp (BEST working file- car runs in a circle)
     --  most recent file I have been working on -- this file simulates the robot running on a circular path
     Similar to the previoud two files:
     See the main method to understand the flow of the model, basically:
@@ -30,8 +30,9 @@
 ### trajectory.txt
     -- the text file that is populated in csv format with the coordinates forming the trajectory of the car after you finish running ScoreTesting.cpp or 
 
-### visual.py -- the script to read in the trajectory.txt file, and create a graph of the trajectory
-            NOTE: currently, it graphs a circle representing the path because I was running Simulation.cpp to get the trajectory
+### visual.py
+    -- the script to read in the trajectory.txt file, and create a graph of the trajectory
+    NOTE: currently, it graphs a circle representing the path in addition to the trajectory because I was running Simulation.cpp to get the trajectory
 
 
 ## To run it:
