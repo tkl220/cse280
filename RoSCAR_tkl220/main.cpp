@@ -11,6 +11,8 @@ using namespace std;
 // Credit to Jin Fagang from https://github.com/jinfagang/Q-Learning
 // for basis of this code.
 
+#define DEBUG false     // Print debug information (Q values) and use consistent rand() seed
+
 // map relevant definitions
 #define NUM_ACTIONS 8 // N {0,1} E {1,0} S {0,-1} W {-1,0} 
                       // NE {1,1} SE {1,-1} SW {-1,-1} NW {-1,1}
@@ -21,11 +23,12 @@ using namespace std;
 #define ALPHA .1 //weight of newly learned behavior
 #define GAMMA .7 //weight of next action
 #define EPSILON .3 //chance next action is random
-#define DESTINATION 8 //state which has positive reward (cheese)
 #define EPISODES 1000 //number of times to find goal
 
 #define TRANSITIONS_TO_PRINT 10 //number of actions from state to print in traversing map using converged Q-matrix
 
+int anim_steps = 200;
+bool ATRAIN = false;    // Animate 
 int gridworld[N][N] = {0};
 double Q[MAP_SIZE][NUM_ACTIONS] = {0};
 double R[MAP_SIZE][NUM_ACTIONS] = {0};
@@ -37,34 +40,29 @@ void write_out_gridworld(int (&grid)[N][N]);
 void write_out_grid_update(int (&grid)[N][N]);
 
 int action_inverse(int action) {
-    if(action == 0) {
+    if(action == 0) {           // N
         return 2;
-    } else if(action == 1) {
+    } else if(action == 1) {    // E
         return 3;
-    } else if(action == 2) {
+    } else if(action == 2) {    // S
         return 0;
-    } else if(action == 3) {
+    } else if(action == 3) {    // W
         return 1;
-    } else if(action == 4) {
+    } else if(action == 4) {    // NE
         return 6;
-    } else if(action == 5) {
+    } else if(action == 5) {    // SE
         return 7;
-    } else if(action == 6) {
+    } else if(action == 6) {    // SW
         return 4;
-    } else if(action == 7) {
+    } else if(action == 7) {    // NW
         return 5;
     }
-  /*if(action == 0) new_state = state + N;          // North
-    else if(action == 1) new_state = state + 1;     // East
-    else if(action == 2) new_state = state - N;     // South
-    else if(action == 3) new_state = state - 1;     // West
-    else if(action == 4) new_state = state + N + 1; // NE
-    else if(action == 5) new_state = state - N + 1; // SE
-    else if(action == 6) new_state = state - N - 1; // SW
-    else if(action == 7) new_state = state + N - 1; // NW
-*/
 }
 
+/**
+ * Make a checkpoint with rewards for parameter actions
+ * in the principal direction parameter direction
+ */ 
 void draw_line(Segment seg, vector<int> actions, int direction) {
     pair<double, double> p1(seg.p1.first + 0.5, seg.p1.second + 0.5);
     pair<double, double> p2(seg.p2.first + 0.5, seg.p2.second + 0.5);
@@ -104,43 +102,42 @@ void draw_line(Segment seg, vector<int> actions, int direction) {
            }
        }	
     } else if(slope > .5) {
-       if(seg.p2.second < seg.p1.second) {
-           pair<double,double> temp = p1;
-           p1 = p2;
-           p2 = temp;
-       }
-       for (int y = (int)(p1.second); y < (int)(p2.second); y++) {
-           int nx  = (int)(p1.first + dx * (y - p1.second) / dy);
-      	   int sx = nx - direction;
-           for (int i = 0; i < actions.size(); i++) {
-	       int action = actions[i];
-	       int r_action = action_inverse(action);
-               if(i < 3) {
-	       	   R[N*y+sx][action] = 100.0;
-	       }
-               R[N*y+nx][r_action] = -500.0;
-	       R[N*y+sx][r_action] = -500.0;
-	       if((N*y+sx)%50 != 0) {
-	   	   R[N*y+sx-1][r_action] = -500.0;
-	       }
-	       if((N*y+nx)%50 != 0) {
-		   R[N*y+nx-1][r_action] = -500.0;
-	       }
-	       if((N*y+sx)%50 != 49) {
-	    	   R[N*y+sx+1][r_action] = -500.0;
-	       }
-	       if((N*y+nx)%50 != 49) {
-	    	   R[N*y+nx+1][r_action] = -500.0;
-	       }
-           }
-       }	
+        if(seg.p2.second < seg.p1.second) {
+            pair<double,double> temp = p1;
+            p1 = p2;
+            p2 = temp;
+        }
+        for (int y = (int)(p1.second); y < (int)(p2.second); y++) {
+            int nx  = (int)(p1.first + dx * (y - p1.second) / dy);
+            int sx = nx - direction;
+            for (int i = 0; i < actions.size(); i++) {
+                int action = actions[i];
+                int r_action = action_inverse(action);
+                    if(i < 3) {
+                    R[N*y+sx][action] = 100.0;
+                }
+                    R[N*y+nx][r_action] = -500.0;
+                R[N*y+sx][r_action] = -500.0;
+                if((N*y+sx)%50 != 0) {
+                R[N*y+sx-1][r_action] = -500.0;
+                }
+                if((N*y+nx)%50 != 0) {
+                R[N*y+nx-1][r_action] = -500.0;
+                }
+                if((N*y+sx)%50 != 49) {
+                    R[N*y+sx+1][r_action] = -500.0;
+                }
+                if((N*y+nx)%50 != 49) {
+                    R[N*y+nx+1][r_action] = -500.0;
+                }
+            }
+        }	
     }
 }
 
 /*
  * Check if action is valid from given state
  */
-// bool check_action(int state, std::pair<int,int> action) {
 bool check_action(int state, int action) {
     if(action == 0 && gridworld[state%N][state/N + 1] == 1) {               // N
         return false;
@@ -186,35 +183,13 @@ int max_q_action(int state) {
     }
     int idx = rand()%equal_actions.size();
     action = equal_actions[idx];
+    if (DEBUG) cout << "Q[" << state << "][" << action << "], R[" << state << "][" << action << "], = " << Q[state][action] << ", " << R[state][action] << endl;
     return action;
 }
-int max_q_action_print(int state) {
-    double max = -999;
-    int action = -1;
-    int i = 0;
-    vector<int> equal_actions = {};
-    for (i = 0; i < NUM_ACTIONS; i++) {
-        if (Q[state][i] >= max && check_action(state, i)) {
-            if (Q[state][i] > max) {
-                equal_actions.clear();
-            }
-            equal_actions.push_back(i);
-            max = Q[state][i];
-            action = i;
-        }
-    }
-    int idx = rand()%equal_actions.size();
-    action = equal_actions[idx];
-    cout << "Q[" << state << "][" << action << "], R[" << state << "][" << action << "], = " << Q[state][action] << ", " << R[state][action] << endl;
-    return action;
-}
-
-
 
 /*
 * old state + action = new state
 */
-// int update_state(int state, std::pair<int,int> action) {
 int update_state(int state, int action) {
     int new_state = -1;
     if(action == 0) new_state = state + N;          // North
@@ -225,7 +200,6 @@ int update_state(int state, int action) {
     else if(action == 5) new_state = state - N + 1; // SE
     else if(action == 6) new_state = state - N - 1; // SW
     else if(action == 7) new_state = state + N - 1; // NW
-    // return state + (N % action.first) + (N / action.second);
     return  new_state;
 }
 
@@ -238,11 +212,11 @@ int episode_iterator(int init_state){
     double old_q;
 
     int step=0;
+    if (ATRAIN) step = 10000 - anim_steps;
     while (step < 10000) {
-    // while (init_state != DESTINATION) {
 
         run_sensors(init_state);
-        // write_out_grid_update(gridworld);
+        if (ATRAIN) write_out_grid_update(gridworld);
 
         // get next action
         double r = (float) rand()/RAND_MAX ;
@@ -259,7 +233,6 @@ int episode_iterator(int init_state){
         Q[init_state][action] = old_q+ALPHA*(R[init_state][action]+GAMMA*Q[next_state][max_q_action(next_state)]-old_q);
 
         init_state = next_state;
-        // cout << step << endl;
         step++;
     }
 
@@ -271,23 +244,24 @@ int episode_iterator(int init_state){
  */
 void train(int init_state){
     // start random
-    // srand((unsigned)time(NULL)); //FIXME: uncomment this (debugging only)
-    srand(1);
+    srand((unsigned)time(NULL));
+    if (DEBUG) srand(1);
     cout << "[INFO] start training..." << endl;
     for (int i = 0; i < EPISODES; ++i) {
         episode_iterator(init_state);
-        cout << i << "\t" << endl;
+        cout <<  '\r' << i << '/' << EPISODES << '\t' << std::flush;
+        if (ATRAIN && i) break;
     }
     cout << "[INFO] end training..." << endl;
 }
 
 void run_Qlearing(int state) {
-    for (int j = 0; j < 100; j++) { //while not at goal state continue asking for new start state...
-        int action = max_q_action_print(state);
+    for (int j = 0; j < 100; j++) {
+        int action = max_q_action(state);
         state = update_state(state, action);    
         pair<double, double> agent(state%N, state/N);    
         update_senseg_csv(agent,get_sensor_segments(track, agent, sensor_16(agent)));
-	write_out_grid_update(gridworld);
+	if (!ATRAIN) write_out_grid_update(gridworld);
     }
 }
 
@@ -340,7 +314,7 @@ void run_sensors(int init_state) {
         gridworld[(int)(segment.p2.first + 0.5)][(int)(segment.p2.second + 0.5)] = 1;
     }
     // update_track_csv(track);
-    // update_senseg_csv(agent, sensor_segments);
+    if (ATRAIN) update_senseg_csv(agent, sensor_segments);
 }
 
 void build_checkpoints() {
@@ -368,19 +342,14 @@ void build_checkpoints() {
     draw_line(checkpoints[3], {3, 6, 2, 7}, -1);
     draw_line(checkpoints[4], {0, 7, 3, 6}, 1);
     draw_line(checkpoints[5], {0, 7, 4, 1}, 1);
-  /*if(action == 0) new_state = state + N;          // North
-    else if(action == 1) new_state = state + 1;     // East
-    else if(action == 2) new_state = state - N;     // South
-    else if(action == 3) new_state = state - 1;     // West
-    else if(action == 4) new_state = state + N + 1; // NE
-    else if(action == 5) new_state = state - N + 1; // SE
-    else if(action == 6) new_state = state - N - 1; // SW
-    else if(action == 7) new_state = state + N - 1; // NW
-*/
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     // INPUTS -------------------------
+    if (argc > 1) {
+        ATRAIN = true;
+        anim_steps = atoi(argv[1]);
+    }
     track = track1();
     build_checkpoints();
     double old_n = 8;
@@ -405,7 +374,6 @@ int main() {
     ofstream out_file1("grid.csv");
     out_file.close(); // Clear it
     train(N*y+x);
-    run_Qlearing(N*y+x);
-    //write_out_gridworld(gridworld);
+    if (!ATRAIN) run_Qlearing(N*y+x);
     return 0;
 }
