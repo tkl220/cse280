@@ -248,9 +248,9 @@ void train(int init_state){
     if (DEBUG) srand(1);
     cout << "[INFO] start training..." << endl;
     for (int i = 0; i < EPISODES; ++i) {
+        if (ATRAIN && i) break;
         episode_iterator(init_state);
         cout <<  '\r' << i << '/' << EPISODES << '\t' << std::flush;
-        if (ATRAIN && i) break;
     }
     cout << "[INFO] end training..." << endl;
 }
