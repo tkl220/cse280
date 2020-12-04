@@ -219,7 +219,7 @@ int main() {
             position actualMove = eqn(traj.back(), bestPosState.newAng, bestPosState.v, bestPosState.w, 0.1);
             
             traj.push_back(actualMove);
-            printf("Position is (%.2f, %.2f) after %.1f  second(s) \n", actualMove.x, actualMove.y, (1 * count) + (i+1)*0.1);
+            printf("Position is (%.2f, %.2f) after %.1f  second(s) \n", actualMove.x, actualMove.y, count + (i+1)*0.1);
         }
         count++;
         
@@ -230,6 +230,7 @@ int main() {
 
     printf("\n\n\n The Trajectory: \n\n");
 
+    // print the trajectory and add it to the trajectory.txt file in csv format
     std::ofstream myfile;
     myfile.open("trajectory.txt");
     for (int i = 0; i < traj.size(); i++) {

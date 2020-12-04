@@ -90,7 +90,6 @@ statePosTraj scoreTrajByGoal(std::vector<statePosTraj> &posTraj, path &thePath, 
     int index = -1;
 
     // check distance to the line, if it's < some amount, make the goal even closer
-    printf("(%f, %f)", goal.x, goal.y);
     float dist;
     float shortestDist = 9999999;
     for (int i = 0; i < posTraj.size(); i++) {
@@ -102,7 +101,6 @@ statePosTraj scoreTrajByGoal(std::vector<statePosTraj> &posTraj, path &thePath, 
     }
 
     float angPath = abs(atan(-(thePath.a / thePath.b)));
-    printf("the angle is %f \n", angPath);
 
     float slope = (-thePath.a/thePath.b);
     // how to know if path tilted left or right? --> +x if right, -x if left
@@ -115,10 +113,6 @@ statePosTraj scoreTrajByGoal(std::vector<statePosTraj> &posTraj, path &thePath, 
     // TODO: add something to determine which y-way we wanna go?
     goal.y = goal.y + sin(angPath);
 
-    //printf("the goal is (%f, %f) \n", goal.x, goal.y);
-
-
-    printf("the chosen best path is x = %.2f, y = %.2f, ang = %.2f \n", posTraj.at(index).pos.x, posTraj.at(index).pos.y, posTraj.at(index).pos.ang);
     // return state & position at the index of the lowest score
     return posTraj.at(index);
 }
@@ -136,7 +130,6 @@ statePosTraj scoreTrajByGoal(std::vector<statePosTraj> &posTraj, path &thePath, 
 std::vector<statePosTraj> genTraj(std::vector<position> traj, path &thePath) {
     // get the current position of the car
     position currPos = traj.back();
-    printf("traj.back is: x = %.2f, y = %.2f, ang = %.2f \n", currPos.x, currPos.y, currPos.ang);
 
     // vector of possible trajectories
     std::vector<statePosTraj> posTraj;
@@ -184,10 +177,8 @@ std::vector<statePosTraj> genTraj(std::vector<position> traj, path &thePath) {
         theState.v = v;
         theState.newAng = angle;
         posTraj.push_back(theState);
-        printf("(%.2f, %.2f)\n", theState.pos.x, theState.pos.y);
         //printf("the possible state: w = %.2f, v = %.2f, x = %.2f, y = %.2f, ang = %.2f \n", w, v, theState.pos.x, theState.pos.y, theState.pos.ang);
     }
-    printf("\n");
     return posTraj;
 }
 
@@ -228,13 +219,12 @@ int main() {
     // goal = {x, y, angle}
     position goal = {3.5, 3.5, abs(atan(-(thePath.a / thePath.b)))};
 
-
-    // NOTE: thePath and goal are passed in, and goal is a point on thePath
-
-
     // get initial distance from origin to the line
     float distFromOrigin = abs(thePath.c / sqrt(pow(thePath.a, 2) + pow(thePath.b, 2)));
 
+    int count = 0;
+
+    // NOTE: thePath and goal are passed in, and goal is a point on thePath
     do {
         // moves the car 1 second towards the path
         for (int i = 0; i < 10; i++) {
@@ -247,8 +237,9 @@ int main() {
             // calculate moving just 0.1 seconds in that direction
             position actualMove = eqn(traj.back(), bestPosState.newAng, bestPosState.v, bestPosState.w, 0.1);
             traj.push_back(actualMove);
-            //printf("Position is (%.2f, %.2f, %.2f) after %.1f  second(s) \n", actualMove.x, actualMove.y, actualMove.ang, (i+1)*0.1);
+            printf("Position is (%.2f, %.2f) after %.1f  second(s) \n", actualMove.x, actualMove.y, count + (i+1)*0.1);
         }
+        count++;
         
         // exit or continue the program
         printf("EXIT: type 0, CONTINUE: type 1 \n");
@@ -256,6 +247,7 @@ int main() {
     } while(exit != 0);
     printf("\n\n\n The Trajectory: \n\n");
 
+    // print the trajectory and add it to the trajectory.txt file in csv format
     std::ofstream myfile;
     myfile.open("trajectory.txt");
     for (int i = 0; i < traj.size(); i++) {
