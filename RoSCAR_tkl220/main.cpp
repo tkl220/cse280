@@ -22,7 +22,7 @@ using namespace std;
 #define GAMMA .7 //weight of next action
 #define EPSILON .3 //chance next action is random
 #define DESTINATION 8 //state which has positive reward (cheese)
-#define EPISODES 3000 //number of times to find goal
+#define EPISODES 1000 //number of times to find goal
 
 #define TRANSITIONS_TO_PRINT 10 //number of actions from state to print in traversing map using converged Q-matrix
 
@@ -54,11 +54,20 @@ int action_inverse(int action) {
     } else if(action == 7) {
         return 5;
     }
+  /*if(action == 0) new_state = state + N;          // North
+    else if(action == 1) new_state = state + 1;     // East
+    else if(action == 2) new_state = state - N;     // South
+    else if(action == 3) new_state = state - 1;     // West
+    else if(action == 4) new_state = state + N + 1; // NE
+    else if(action == 5) new_state = state - N + 1; // SE
+    else if(action == 6) new_state = state - N - 1; // SW
+    else if(action == 7) new_state = state + N - 1; // NW
+*/
 }
 
-void draw_line(Segment seg, vector<int> actions) {
-    pair<double, double> p1(seg.p1.first, seg.p1.second);
-    pair<double, double> p2(seg.p2.first, seg.p2.second);
+void draw_line(Segment seg, vector<int> actions, int direction) {
+    pair<double, double> p1(seg.p1.first + 0.5, seg.p1.second + 0.5);
+    pair<double, double> p2(seg.p2.first + 0.5, seg.p2.second + 0.5);
     if (seg.p2.first < seg.p1.first) {
         pair<double,double> temp = p1;
         p1 = p2;
@@ -67,13 +76,64 @@ void draw_line(Segment seg, vector<int> actions) {
 
     double dx = p2.first - p1.first;
     double dy = p2.second - p1.second;
-
-    for (int x = (int)(p1.first); x < (int)(p2.first); x++) {
-        int y = (int)(p1.second + dy * (x - p1.first) / dx);
-        for (auto action : actions) {
-            R[N*y+x][action] = 50;
-            R[N*y+x][action_inverse(action)] = -50;
-        }
+    double slope = abs(dy/dx);
+    if(slope <= .5) {
+       for (int x = (int)(p1.first); x < (int)(p2.first); x++) {
+           int ny  = (int)(p1.second + dy * (x - p1.first) / dx);
+      	   int sy = ny - direction;
+           for (int i = 0; i < actions.size(); i++) {
+	       int action = actions[i];
+	       int r_action = action_inverse(action);
+               if(i < 3) {
+	       	   R[N*sy+x][action] = 100.0;
+	       }
+               R[N*ny+x][r_action] = -500.0;
+	       R[N*sy+x][r_action] = -500.0;
+	       if((N*sy+x)%50 != 0) {
+	   	   R[N*sy+x-1][r_action] = -500.0;
+	       }
+	       if((N*ny+x)%50 != 0) {
+		   R[N*ny+x-1][r_action] = -500.0;
+	       }
+	       if((N*sy+x)%50 != 49) {
+	    	   R[N*sy+x+1][r_action] = -500.0;
+	       }
+	       if((N*ny+x)%50 != 49) {
+	    	   R[N*ny+x+1][r_action] = -500.0;
+	       }
+           }
+       }	
+    } else if(slope > .5) {
+       if(seg.p2.second < seg.p1.second) {
+           pair<double,double> temp = p1;
+           p1 = p2;
+           p2 = temp;
+       }
+       for (int y = (int)(p1.second); y < (int)(p2.second); y++) {
+           int nx  = (int)(p1.first + dx * (y - p1.second) / dy);
+      	   int sx = nx - direction;
+           for (int i = 0; i < actions.size(); i++) {
+	       int action = actions[i];
+	       int r_action = action_inverse(action);
+               if(i < 3) {
+	       	   R[N*y+sx][action] = 100.0;
+	       }
+               R[N*y+nx][r_action] = -500.0;
+	       R[N*y+sx][r_action] = -500.0;
+	       if((N*y+sx)%50 != 0) {
+	   	   R[N*y+sx-1][r_action] = -500.0;
+	       }
+	       if((N*y+nx)%50 != 0) {
+		   R[N*y+nx-1][r_action] = -500.0;
+	       }
+	       if((N*y+sx)%50 != 49) {
+	    	   R[N*y+sx+1][r_action] = -500.0;
+	       }
+	       if((N*y+nx)%50 != 49) {
+	    	   R[N*y+nx+1][r_action] = -500.0;
+	       }
+           }
+       }	
     }
 }
 
@@ -109,7 +169,7 @@ bool check_action(int state, int action) {
 /*
  * get max value in Q matrix from given state
  */
-int max_q_action(int state){
+int max_q_action(int state) {
     double max = -999;
     int action = -1;
     int i = 0;
@@ -128,6 +188,28 @@ int max_q_action(int state){
     action = equal_actions[idx];
     return action;
 }
+int max_q_action_print(int state) {
+    double max = -999;
+    int action = -1;
+    int i = 0;
+    vector<int> equal_actions = {};
+    for (i = 0; i < NUM_ACTIONS; i++) {
+        if (Q[state][i] >= max && check_action(state, i)) {
+            if (Q[state][i] > max) {
+                equal_actions.clear();
+            }
+            equal_actions.push_back(i);
+            max = Q[state][i];
+            action = i;
+        }
+    }
+    int idx = rand()%equal_actions.size();
+    action = equal_actions[idx];
+    cout << "Q[" << state << "][" << action << "], R[" << state << "][" << action << "], = " << Q[state][action] << ", " << R[state][action] << endl;
+    return action;
+}
+
+
 
 /*
 * old state + action = new state
@@ -194,18 +276,18 @@ void train(int init_state){
     cout << "[INFO] start training..." << endl;
     for (int i = 0; i < EPISODES; ++i) {
         episode_iterator(init_state);
-        cout << i << "\t";
+        cout << i << "\t" << endl;
     }
     cout << "[INFO] end training..." << endl;
 }
 
 void run_Qlearing(int state) {
     for (int j = 0; j < 100; j++) { //while not at goal state continue asking for new start state...
-        int action = max_q_action(state);
+        int action = max_q_action_print(state);
         state = update_state(state, action);    
         pair<double, double> agent(state%N, state/N);    
-        write_out_gridworld(gridworld);
         update_senseg_csv(agent,get_sensor_segments(track, agent, sensor_16(agent)));
+	write_out_grid_update(gridworld);
     }
 }
 
@@ -280,12 +362,21 @@ void build_checkpoints() {
         [old_n](Segment &seg){return Segment(make_pair(seg.p1.first*N/old_n, seg.p1.second*N/old_n),
                                             make_pair(seg.p2.first*N/old_n, seg.p2.second*N/old_n));}
     );
-    draw_line(checkpoints[0], {0, 4, 1});
-    draw_line(checkpoints[1], {2, 5, 1});
-    draw_line(checkpoints[2], {6, 2, 5});
-    draw_line(checkpoints[3], {3, 6, 2});
-    draw_line(checkpoints[4], {0, 7, 3});
-    draw_line(checkpoints[5], {0, 7, 4});
+    draw_line(checkpoints[0], {0, 4, 1, 5}, 1);
+    draw_line(checkpoints[1], {2, 5, 1, 4}, 1);
+    draw_line(checkpoints[2], {6, 2, 5, 1}, -1);
+    draw_line(checkpoints[3], {3, 6, 2, 7}, -1);
+    draw_line(checkpoints[4], {0, 7, 3, 6}, 1);
+    draw_line(checkpoints[5], {0, 7, 4, 1}, 1);
+  /*if(action == 0) new_state = state + N;          // North
+    else if(action == 1) new_state = state + 1;     // East
+    else if(action == 2) new_state = state - N;     // South
+    else if(action == 3) new_state = state - 1;     // West
+    else if(action == 4) new_state = state + N + 1; // NE
+    else if(action == 5) new_state = state - N + 1; // SE
+    else if(action == 6) new_state = state - N - 1; // SW
+    else if(action == 7) new_state = state + N - 1; // NW
+*/
 }
 
 int main() {
@@ -314,7 +405,7 @@ int main() {
     ofstream out_file1("grid.csv");
     out_file.close(); // Clear it
     train(N*y+x);
-    // run_Qlearing(N*y+x);
-    write_out_gridworld(gridworld);
+    run_Qlearing(N*y+x);
+    //write_out_gridworld(gridworld);
     return 0;
 }
